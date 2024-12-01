@@ -1,0 +1,249 @@
+---
+title: "World Map"
+format: dashboard
+server: shiny
+---
+
+```{r setup}
+#| context: setup
+#| include: false
+library(ggplot2)
+library("shiny")
+library("bslib")
+library("ggplot2")
+library("sf")
+library("dplyr")
+library("magrittr")
+library("ggplot2")
+library("rmapshaper")
+library("colorspace")
+world_small <- sf::st_read("./data/world_small.shp")
+world_medium <- sf::st_read("./data/world_medium.shp")
+world_large <- sf::st_read("./data/world_large.shp")
+```
+
+# Inputs {.sidebar}
+
+```{r input-side}
+# Input: 
+selectInput(
+  inputId = "resolution", 
+  label = "Resolution:", 
+  choices = list("Low" = "small", "Medium" = "medium", "High" = "large"),
+  selected = "small",
+  multiple = FALSE
+)
+selectInput(
+  inputId = "method", 
+  label = "Method:", 
+  choices = list("Visvalingam" = "vis", 
+                 "Douglas-Peuker" = "dp"),
+  selected = "vis",
+  multiple = FALSE
+)
+sliderInput(
+  inputId = "keep", 
+  label = "Pct. Vertex to keep:", 
+  min = 0, 
+  max = 1, 
+  step = 0.1,
+  value = .1
+)
+selectInput(
+  inputId = "min_area", 
+  label = "Island Min. Area (km^2):", 
+  choices = list("1,000" = 1e6, 
+                 "10,000" = 1e7,
+                 "100,000" = 1e8,
+                 "1,000,000" = 1e9,
+                 "2,000,000" = 2e9),
+  selected = 1e8,
+  multiple = FALSE
+)
+checkboxInput(
+  inputId = "labels",
+  label = "Labels:",
+  value = FALSE
+)
+sliderInput(
+  inputId = "lng",
+  label = "Longitude:",
+  min = -180,
+  max = 180,
+  value = c(-180, 180),
+  step = 5
+)
+sliderInput(
+  inputId = "lat",
+  label = "Latitude:",
+  min = -90,
+  max = 90,
+  value = c(-90, 90),
+  step = 5
+)
+selectInput(
+  inputId = "palette",
+  label = "Palette:",
+  choices = c("Pastel 1", "Dark 2", "Dark 3", 
+              "Set 2", "Set 3", "Warm", "Cold"),
+  selected = "Pastel 1")
+selectInput(
+  inputId = "theme",
+  label = "Theme:",
+  choices = c("theme_bw", "theme_minimal", "theme_void"),
+  selected = "theme_bw")
+textInput(
+  inputId = "title",
+  label = "Map title:",
+  placeholder = "e.g. Middle East"
+)
+downloadButton('downloadMap', 'Download Cropped', width="20%")
+```
+
+# Map {orientation="columns"}
+
+## Column {width=60%}
+
+::: {.card title="World - Full"}
+
+```{r main-plot-full}
+plotOutput(outputId = "map_full")
+```
+
+:::
+
+::: {.card title="World - Cropped"}
+
+```{r main-plot-crop}
+plotOutput(outputId = "mapPlot")
+```
+
+
+:::
+
+
+## Column {width=40%}
+
+::: {.card title="Bounding Box"}
+
+```{r bbox}
+verbatimTextOutput(outputId = "bbox")
+```
+
+:::
+
+::: {.card title="Object Size"}
+
+```{r obj-size}
+#output
+textOutput("obj_size")
+```
+
+:::
+
+```{r server}
+#| context: server
+# bounding box ----
+bbox <- reactive({
+  st_bbox(c(xmin = input$lng[1], xmax = input$lng[2], 
+                 ymin = input$lat[1], ymax = input$lat[2]),
+               crs = 4326) %>% 
+  st_as_sfc()
+})
+
+output$bbox <- renderPrint({
+  sf::st_bbox(bbox())
+})
+
+
+# world full data ----
+world_full <- reactive({
+    get(paste0("world_", input$resolution)) %>% 
+  mutate(mapcolor7 = as.factor(mapcolor7)) %>% 
+  ms_simplify(
+    keep = input$keep,
+    method = input$method
+  ) %>% 
+  ms_filter_islands(
+    min_area = as.integer(input$min_area)
+  )
+})
+# plot world full ----
+map_full <- reactive({
+    ggplot() +
+    geom_sf(data = world_full(), 
+            aes(fill = mapcolor7), 
+            color = "black",
+            show.legend = F) +
+    geom_sf(data = bbox(), color = "red", fill = "red", alpha = .1, linewidth = 1) +
+      coord_sf(xlim = c(-180, 180),
+               ylim = c(-90, 90),
+               expand = FALSE) +
+      scale_fill_discrete_qualitative(palette = input$palette) +
+      get(gsub("\\(\\)","",input$theme))() +
+      theme(axis.text = element_text(size = 14)) +
+      labs(x = "", y = "")
+})
+# output map full ----
+output$map_full <- renderPlot({
+  map_full()
+})
+# world  cropped data ----
+world_cropped <- reactive({
+  get(paste0("world_", input$resolution)) %>% 
+  mutate(mapcolor7 = as.factor(mapcolor7)) %>% 
+  ms_simplify(
+    keep = input$keep,
+    method = input$method
+  ) %>% 
+  ms_filter_islands(
+    min_area = as.integer(input$min_area)
+  ) %>% 
+    st_difference() -> world_full
+  sf_use_s2(FALSE)
+  st_crop(world_full, bbox())
+  })
+
+
+# file size ----
+output$obj_size <- renderText({
+    paste0("Size: ", format(object.size(world_cropped()), units = "auto", digits = 0, quote = FALSE))
+  })
+# plot world cropped ----
+map_cropped <- reactive({
+    ggplot() +
+    geom_sf(data = world_cropped(), 
+            aes(fill = mapcolor7), 
+            color = "black",
+            show.legend = F) +
+    {if(input$labels) geom_sf_label(data = world_cropped(), aes(label = sov_a3), size = 3)} +
+      coord_sf(xlim = c(input$lng[1], input$lng[2]),
+               ylim = c(input$lat[1], input$lat[2]),
+               expand = FALSE) +
+      scale_fill_discrete_qualitative(palette = input$palette) +
+      get(gsub("\\(\\)","",input$theme))() +
+      theme(axis.text = element_text(size = 14)) +
+      labs(title = input$title, x = "", y = "")
+})
+
+output$mapPlot <- renderPlot({
+  map_cropped()
+})
+# download image ----
+output$downloadMap <- downloadHandler(
+  filename = function() { 
+    if(input$title != ""){
+      paste0(input$title, '.png')
+      } else { 'map.png'}
+    },
+  content = function(file) {
+    ggsave(file, map_cropped())
+  }
+)
+# vars ----
+output$varText <- renderText({
+  input$resolution
+})
+# end ----
+```
+
