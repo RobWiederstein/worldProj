@@ -104,7 +104,7 @@ downloadButton('downloadMap', 'Download Cropped', width="20%")
 
 ## Column {width=60%}
 
-::: {.card title="World - Full"}
+::: {.card title="Resolution - Full"}
 
 ```{r main-plot-full}
 plotOutput(outputId = "map_full")
@@ -112,7 +112,7 @@ plotOutput(outputId = "map_full")
 
 :::
 
-::: {.card title="World - Cropped"}
+::: {.card title="Resolution - Custom"}
 
 ```{r main-plot-crop}
 plotOutput(outputId = "mapPlot")
@@ -185,15 +185,16 @@ output$center <- renderText({
 
 ## world full data ----
 world_full <- reactive({
-    get(paste0("world_", input$resolution)) %>% 
-  mutate(mapcolor7 = as.factor(mapcolor7)) %>% 
-  ms_simplify(
-    keep = input$keep,
-    method = input$method
-  ) %>% 
-  ms_filter_islands(
-    min_area = as.integer(input$min_area)
-  )
+  #get(paste0("world_", input$resolution)) %>% 
+  world_large %>% 
+  mutate(mapcolor7 = as.factor(mapcolor7)) #%>% 
+  # ms_simplify(
+  #   keep = input$keep,
+  #   method = input$method
+  # ) %>% 
+  # ms_filter_islands(
+  #   min_area = as.integer(input$min_area)
+  # )
 })
 ## world full plot ----
 map_full <- reactive({
