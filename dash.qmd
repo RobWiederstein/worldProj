@@ -118,7 +118,6 @@ plotOutput(outputId = "map_full")
 plotOutput(outputId = "mapPlot")
 ```
 
-
 :::
 
 
@@ -149,8 +148,18 @@ textOutput("obj_size")
 
 :::
 
+::: {.card title="Projection"}
+
+```{r projection}
+#output
+textOutput("projection")
+```
+
+:::
+
 ```{r server}
 #| context: server
+
 # bounding box ----
 bbox <- reactive({
   st_bbox(c(xmin = input$lng[1], xmax = input$lng[2], 
@@ -222,11 +231,16 @@ world_cropped <- reactive({
   st_crop(world_full, bbox())
   })
 
-
 # file size ----
 output$obj_size <- renderText({
     paste0("Size: ", format(object.size(world_cropped()), units = "auto", digits = 0, quote = FALSE))
   })
+
+# projection ----
+output$projection <- renderText({
+  paste0("EPSG: ", crsuggest::suggest_top_crs(world_cropped()))
+})
+
 # plot world cropped ----
 map_cropped <- reactive({
     ggplot() +
