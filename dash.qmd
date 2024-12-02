@@ -159,8 +159,8 @@ textOutput("projection")
 
 ```{r server}
 #| context: server
-
-# bounding box ----
+# Page one ----
+## bounding box create ----
 bbox <- reactive({
   st_bbox(c(xmin = input$lng[1], xmax = input$lng[2], 
                  ymin = input$lat[1], ymax = input$lat[2]),
@@ -172,7 +172,7 @@ output$bbox <- renderPrint({
   sf::st_bbox(bbox())
 })
 
-# center ----
+## centroid create ----
 center <- reactive({
   sf::st_centroid(bbox())
 })
@@ -183,7 +183,7 @@ output$center <- renderText({
 })
 
 
-# world full data ----
+## world full data ----
 world_full <- reactive({
     get(paste0("world_", input$resolution)) %>% 
   mutate(mapcolor7 = as.factor(mapcolor7)) %>% 
@@ -195,7 +195,7 @@ world_full <- reactive({
     min_area = as.integer(input$min_area)
   )
 })
-# plot world full ----
+## world full plot ----
 map_full <- reactive({
     ggplot() +
     geom_sf(data = world_full(), 
@@ -211,11 +211,11 @@ map_full <- reactive({
       theme(axis.text = element_text(size = 14)) +
       labs(x = "", y = "")
 })
-# output map full ----
+## world full output ----
 output$map_full <- renderPlot({
   map_full()
 })
-# world  cropped data ----
+## world cropped data ----
 world_cropped <- reactive({
   get(paste0("world_", input$resolution)) %>% 
   mutate(mapcolor7 = as.factor(mapcolor7)) %>% 
@@ -231,17 +231,17 @@ world_cropped <- reactive({
   st_crop(world_full, bbox())
   })
 
-# file size ----
+## world cropped file size ----
 output$obj_size <- renderText({
     paste0("Size: ", format(object.size(world_cropped()), units = "auto", digits = 0, quote = FALSE))
   })
 
-# projection ----
+## world cropped projection ----
 output$projection <- renderText({
   paste0("EPSG: ", crsuggest::suggest_top_crs(world_cropped()))
 })
 
-# plot world cropped ----
+## world cropped plot ----
 map_cropped <- reactive({
     ggplot() +
     geom_sf(data = world_cropped(), 
@@ -261,7 +261,7 @@ map_cropped <- reactive({
 output$mapPlot <- renderPlot({
   map_cropped()
 })
-# download image ----
+## world cropped download ----
 output$downloadMap <- downloadHandler(
   filename = function() { 
     if(input$title != ""){
@@ -272,10 +272,10 @@ output$downloadMap <- downloadHandler(
     ggsave(file, map_cropped())
   }
 )
-# vars ----
+## check vars  ----
 output$varText <- renderText({
   input$resolution
 })
-# end ----
+## end ----
 ```
 
