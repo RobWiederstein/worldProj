@@ -7,16 +7,16 @@ server: shiny
 ```{r setup}
 #| context: setup
 #| include: false
-library(ggplot2)
-library("shiny")
+
 library("bslib")
-library("ggplot2")
-library("sf")
-library("dplyr")
-library("magrittr")
-library("ggplot2")
-library("rmapshaper")
+library("crsuggest")
 library("colorspace")
+library("dplyr")
+library("ggplot2")
+library("magrittr")
+library("rmapshaper")
+library("sf")
+library("shiny")
 world_small <- sf::st_read("./data/world_small.shp")
 world_medium <- sf::st_read("./data/world_medium.shp")
 world_large <- sf::st_read("./data/world_large.shp")
