@@ -132,6 +132,14 @@ verbatimTextOutput(outputId = "bbox")
 
 :::
 
+::: {.card title="Center"}
+
+```{r bbox-center}
+verbatimTextOutput(outputId = "center")
+```
+
+:::
+
 ::: {.card title="Object Size"}
 
 ```{r obj-size}
@@ -153,6 +161,16 @@ bbox <- reactive({
 
 output$bbox <- renderPrint({
   sf::st_bbox(bbox())
+})
+
+# center ----
+center <- reactive({
+  sf::st_centroid(bbox())
+})
+
+output$center <- renderText({
+  paste0("Longitude: ", unlist(center())[1], "\n",
+         "Latitude: ", unlist(center())[2])
 })
 
 
