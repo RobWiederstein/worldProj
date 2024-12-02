@@ -5,6 +5,6 @@ account: rob-wiederstein
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13466473
-bundleId: 9442662
+bundleId: 9448650
 url: https://rob-wiederstein.shinyapps.io/worldproj/
 version: 1
