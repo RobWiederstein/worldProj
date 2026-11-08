@@ -2,6 +2,7 @@
 title: "World Map"
 format: dashboard
 server: shiny
+theme: cosmo
 ---
 
 ```{r setup}
@@ -65,6 +66,11 @@ checkboxInput(
   label = "Labels:",
   value = FALSE
 )
+checkboxInput(
+  inputId = "epsg",
+  label = "Projection:",
+  value = FALSE
+)
 sliderInput(
   inputId = "lng",
   label = "Longitude:",
@@ -98,6 +104,7 @@ textInput(
   placeholder = "e.g. Middle East"
 )
 downloadButton('downloadMap', 'Download Cropped', width="20%")
+textOutput(outputId = "varText")
 ```
 
 # Map {orientation="columns"}
@@ -148,7 +155,7 @@ textOutput("obj_size")
 
 :::
 
-::: {.card title="Projection"}
+::: {.card title="Recommended Projection"}
 
 ```{r projection}
 #output
@@ -159,6 +166,7 @@ textOutput("projection")
 
 ```{r server}
 #| context: server
+
 # Page one ----
 ## bounding box create ----
 bbox <- reactive({
@@ -238,8 +246,11 @@ output$obj_size <- renderText({
   })
 
 ## world cropped projection ----
+crs <- reactive({
+  crsuggest::suggest_top_crs(world_cropped())
+})
 output$projection <- renderText({
-  paste0("EPSG: ", crsuggest::suggest_top_crs(world_cropped()))
+  paste0("EPSG: ", crs())
 })
 
 ## world cropped plot ----
@@ -250,9 +261,15 @@ map_cropped <- reactive({
             color = "black",
             show.legend = F) +
     {if(input$labels) geom_sf_label(data = world_cropped(), aes(label = sov_a3), size = 3)} +
+    {if(input$epsg)
+      {
+      coord_sf(crs = crs(), expand = FALSE)
+      } else {
       coord_sf(xlim = c(input$lng[1], input$lng[2]),
                ylim = c(input$lat[1], input$lat[2]),
-               expand = FALSE) +
+               expand = FALSE)
+     }
+    } +
       scale_fill_discrete_qualitative(palette = input$palette) +
       get(gsub("\\(\\)","",input$theme))() +
       theme(axis.text = element_text(size = 14)) +
@@ -275,8 +292,8 @@ output$downloadMap <- downloadHandler(
 )
 ## check vars  ----
 output$varText <- renderText({
-  input$resolution
+  input$epsg
 })
-## end ----
+# end ----
 ```
 
