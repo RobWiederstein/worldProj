@@ -5,3 +5,6 @@ dash.html
 .httr-oauth
 .DS_Store
 .quarto
+dash_files/
+rsconnect/
+.RData
