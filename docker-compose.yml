@@ -1,0 +1,12 @@
+services:
+  worldproj:
+    build: .
+    container_name: worldproj-app
+    ports:
+      - "127.0.0.1:3848:3838"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3838/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3

@@ -1,0 +1,14 @@
+.git
+renv/library
+renv/staging
+.Rproj.user
+.Rhistory
+.Rdata
+.RData
+.DS_Store
+.quarto
+rsconnect
+data-raw
+# Rendered output is rebuilt in the image
+dash.html
+dash_files
